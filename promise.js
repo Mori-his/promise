@@ -19,39 +19,35 @@ class MyPromise {
         this._rejects.push(callback);
         if (this._state === MyPromise.FAILING) {
             this._handle(this._prevValue);
+_handle(args) {
+        if (this._state === MyPromise.PENDING) return this;
+        let hitName = this._state === MyPromise.COMPLETE ? '_resolves' : '_rejects';
+        let fn, value;
+        while(fn = this[hitName].shift()) {
+            value = fn.call(this, value || args);
         }
+        while(fn = this._finallys.shift()) {
+            value = fn.call(this, value || args);
+        }
+        this._prevValue = args;
+    }
+    then(callback) {
+        this._resolves.push(callback);
+        if (this._state === MyPromise.COMPLETE) this._handle(this._prevValue);
+
         return this;
     }
+    catch(callback) {
+        this._rejects.push(callback);
+        if (this._state === MyPromise.FAILING) this._handle(this._prevValue);
 
+        return this;
+    }
     finally(callback) {
         this._finallys.push(callback);
-        if (this._state !== MyPromise.PENDING) {
-            this._handle(this._prevValue);
-        }
+        if (this._state !== MyPromise.PENDING) this._handle(this._prevValue);
+
         return this;
-    }
-
-    _handle(args) {
-        if (this._state === MyPromise.PENDING) return this;
-        let hitName;
-        switch (this._state) {
-            case MyPromise.COMPLETE:
-                hitName = '_resolves';
-                break;
-            case MyPromise.FAILING:
-                hitName = '_rejects';
-                break;
-        }
-        let fn, value;
-
-        while (fn = this[hitName].shift()) {
-            value = fn.call(this, value || args);
-        }
-
-        while (fn = this._finallys.shift()) {
-            value = fn.call(this, value || args);
-        }
-        this._prevValue = value || args;
     }
     getState() {
         return this._state;
@@ -96,9 +92,10 @@ MyPromise.all = function(iterable) {
                         --promiseNum;
                         result[key] = data;
                         if (promiseNum === 0 && result.length === iterable.length) {
-                            hasPromise = false;
                             resolve(result);
-                        }                        
+                        } else if (promiseNum === 0) {
+                            hasPromise = false;
+                        }
                     }).catch(err => {
                         reject(err);
                     });
