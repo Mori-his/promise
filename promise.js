@@ -19,7 +19,7 @@ class MyPromise {
         this._rejects.push(callback);
         if (this._state === MyPromise.FAILING) {
             this._handle(this._prevValue);
-_handle(args) {
+    _handle(args) {
         if (this._state === MyPromise.PENDING) return this;
         let hitName = this._state === MyPromise.COMPLETE ? '_resolves' : '_rejects';
         let fn, value;
@@ -117,11 +117,10 @@ MyPromise.race = function(iterable) {
     return new MyPromise((resolve, reject) => {
         let flag = false;
         for (let i = 0; i < iterable.length; i++) {
-            if (flag) {
-                break;
-            }
+            if (flag) break;
             if (iterable[i] instanceof MyPromise) {
                 iterable[i].finally((result) => {
+                    if (flag) return;
                     flag = true;
                     if (iterable[i].getState() === MyPromise.COMPLETE) {
                         resolve(result);
@@ -131,6 +130,7 @@ MyPromise.race = function(iterable) {
                 })
             } else if (typeof iterable[i] === 'function') {
                 try {
+                    flag = true;
                     resolve(iterable[i]());
                 } catch (e) {
                     reject(e);
