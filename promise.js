@@ -136,6 +136,7 @@ MyPromise.race = function(iterable) {
                     reject(e);
                 }
             } else {
+                flag = true;
                 resolve(iterable);
             }
         }
