@@ -6,19 +6,7 @@ class MyPromise {
         this._state = MyPromise.PENDING;
         input(MyPromise.resolve.bind(this), MyPromise.reject.bind(this));
     }
-
-    then(callback) {
-        this._resolves.push(callback);
-        if (this._state === MyPromise.COMPLETE) {
-            this._handle(this._prevValue);
-        }
-        return this;
-    }
-
-    catch(callback) {
-        this._rejects.push(callback);
-        if (this._state === MyPromise.FAILING) {
-            this._handle(this._prevValue);
+    
     _handle(args) {
         if (this._state === MyPromise.PENDING) return this;
         let hitName = this._state === MyPromise.COMPLETE ? '_resolves' : '_rejects';
@@ -31,24 +19,28 @@ class MyPromise {
         }
         this._prevValue = args;
     }
+    
     then(callback) {
         this._resolves.push(callback);
         if (this._state === MyPromise.COMPLETE) this._handle(this._prevValue);
 
         return this;
     }
+    
     catch(callback) {
         this._rejects.push(callback);
         if (this._state === MyPromise.FAILING) this._handle(this._prevValue);
 
         return this;
     }
+    
     finally(callback) {
         this._finallys.push(callback);
         if (this._state !== MyPromise.PENDING) this._handle(this._prevValue);
 
         return this;
     }
+    
     getState() {
         return this._state;
     }
