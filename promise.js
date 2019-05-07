@@ -84,40 +84,36 @@ MyPromise.reject = function(args) {
 }
 
 MyPromise.all = function(iterable) {
+    if (!(iterable instanceof Array)) return;
+    let result = [], hasPromise, promiseNum = 0;
     return new MyPromise((resolve, reject) => {
-        let values = [];
         for (let i = 0; i < iterable.length; i++) {
             if (iterable[i] instanceof MyPromise) {
-                (key => {
-                    iterable[key].finally(result => {
-                        values[key] = result;
-                        if (values.length === iterable.length) {
-                            if (iterable[key].getState() === MyPromise.COMPLETE) {
-                                resolve(values);
-                            } else {
-                                reject(values);
-                            }
-                        }
-                    })
-                })(i)
+                hasPromise = true;
+                ++promiseNum;
+                ((key) => {
+                    iterable[i].then(data => {
+                        --promiseNum;
+                        result[key] = data;
+                        if (promiseNum === 0 && result.length === iterable.length) {
+                            hasPromise = false;
+                            resolve(result);
+                        }                        
+                    }).catch(err => {
+                        reject(err);
+                    });
+                })(i);
             } else if (typeof iterable[i] === 'function') {
-                const isCmplete = values.length === iterable.length;
-                try {
-                    values[i] = iterable[i]();
-                    if (isCmplete) {
-                        resolve(values);
-                    }
-                } catch (err) {
-                    reject(err);
-                }
+                result[i] = iterable[i]();
             } else {
-                values[i] = iterable[i];
-                if (values.length === iterable.length) {
-                    resolve(values);
-                }
+                result[i] = iterable[i]
             }
         }
-    })
+        if (!hasPromise) {
+            resolve(result)
+        }
+
+    });
 }
 
 MyPromise.race = function(iterable) {
