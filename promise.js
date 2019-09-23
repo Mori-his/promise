@@ -9,15 +9,37 @@ class MyPromise {
     
     _handle(args) {
         if (this._state === MyPromise.PENDING) return this;
-        let hitName = this._state === MyPromise.COMPLETE ? '_resolves' : '_rejects';
-        let fn, value;
-        while(fn = this[hitName].shift()) {
-            value = fn.call(this, value || args);
+        let hitObj = this._state === MyPromise.COMPLETE ? this._resolves : this._rejects;
+        let value;
+        this._async(hitObj.concat(this._finallys), (fn, next) => {
+            if (value instanceof MyPromise) {
+                value.then(val => {
+                    value = fn.call(this, val || args);
+                    this._prevValue =  value || args;
+                    next();
+                })
+            } else {
+                value = fn.call(this, value || args);
+                this._prevValue =  value || args;
+                next();
+            }
+        })
+    }
+    
+    _async(array, fn, callback) {
+        if (array.length === 0) return;
+        let index = 0, status = false;
+        next()
+        function next() {
+            fn(array[index], function() {
+                setTimeout(_ => {
+                    !status && next()
+                    status && callback && callback()
+                })
+            })
+            index++
+            status = array.length === index
         }
-        while(fn = this._finallys.shift()) {
-            value = fn.call(this, value || args);
-        }
-        this._prevValue = args;
     }
     
     then(callback) {
