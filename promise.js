@@ -8,37 +8,40 @@ class MyPromise {
     }
     
     _handle(args) {
-        if (this._state === MyPromise.PENDING) return this;
-        let hitObj = this._state === MyPromise.COMPLETE ? this._resolves : this._rejects;
-        let value;
+        if (this._state === MyPromise.PENDING) return
+        const hitObj = this._state === MyPromise.COMPLETE ? this._resolves : this._rejects
+        let value
         this._async(hitObj.concat(this._finallys), (fn, next) => {
             if (value instanceof MyPromise) {
                 value.then(val => {
-                    value = fn.call(this, val || args);
-                    this._prevValue =  value || args;
-                    next();
+                    value = fn.call(this, val || args)
+                    this._prevValue = value || args
+                    next()
+                }).catch(err => {
+                    MyPromise.reject.call(this, err)
                 })
             } else {
-                value = fn.call(this, value || args);
-                this._prevValue =  value || args;
-                next();
+                value = fn.call(this, value || args)
+                this._prevValue = value || args
+                next()
             }
+        }, _ => {
+            hitObj.splice(0, hitObj.length)
+            this._finallys = []
         })
     }
-    
+
     _async(array, fn, callback) {
-        if (array.length === 0) return;
-        let index = 0, status = false;
         next()
         function next() {
-            fn(array[index], function() {
-                setTimeout(_ => {
-                    !status && next()
-                    status && callback && callback()
+            const curr = array.shift()
+            if (curr) {
+                fn(curr, function() {
+                    next()
                 })
-            })
-            index++
-            status = array.length === index
+            } else {
+                callback && callback()
+            }
         }
     }
     
